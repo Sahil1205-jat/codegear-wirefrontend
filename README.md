@@ -1,38 +1,74 @@
-# ⚡ Code Gear & Wear — UI / Web OS
+# ⚡ Code Gear — Gamified Programming Engine
 
-*"Understand the machine. AI lives in the system, not in your brain."*
+<div align="center">
+  <img src="public/logo.png" width="150" alt="Code Gear Logo">
+</div>
 
-Welcome to the frontend repository of **Code Gear & Wear**. This is a highly interactive, Next.js-powered educational platform designed to visualize how C, C++, and Java code physically executes on computer hardware. 
+Welcome to **Code Gear**. This is a highly interactive, Next.js-powered educational platform designed to teach programming through a gamified, LeetCode-style curriculum. 
 
-The UI ditches the traditional "boring IDE" look and replaces it with a fully draggable, resizable OS-style desktop window manager and a live Motherboard map.
+Ditching the traditional "boring IDE", Code Gear provides an engaging Campaign Map, persistent XP tracking, and dynamic problem-solving missions that auto-advance as you write correct code.
 
 ## ✨ Features
+- **🎮 Campaign Map:** A visual, Candy Crush-style progression map that unlocks new levels as you master programming concepts.
+- **🏆 Persistent XP & Gamification:** Earn XP for every mission passed. Your progress is permanently saved using a local SQLite Database via Prisma.
+- **🤖 Auto-Validation Engine:** Writes to standard output are automatically intercepted and checked against mission requirements (similar to LeetCode).
+- **☁️ Cloud Execution:** Connects directly to the Wandbox public API, allowing serverless C, C++, and Java execution directly from the browser!
+- **🔐 Google OAuth:** Secure user login via NextAuth.
 
-- **🪟 Floating Window Manager:** Built with `react-rnd`, featuring macOS/Win11 style traffic-light buttons, dynamic Z-index focusing, and full minimization into a frosted-glass bottom Dock.
-- **🖥️ Hardware Visualizer:** A `react-konva` powered interactive motherboard that simulates data movement across the System Bus, RAM, and CPU during code compilation and execution.
-- **☁️ Dual Execution Engines:** 
-  - **Local Sandbox Mode:** Connects to our custom Docker backend for absolute hardware-level execution.
-  - **Cloud Compiler API:** Connects directly to the Wandbox public API, allowing serverless code execution directly from the browser!
-- **🎨 Hardcore Aesthetics:** Built using TailwindCSS and Framer Motion to create a sleek, dark-mode, engineering-focused UI.
+---
 
-## 🚀 Quick Start
+## 🚀 How to Clone and Run Locally
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-2. Start the development server:
-   ```bash
-   npm run dev
-   ```
-3. Open `http://localhost:3000` in your browser.
+Follow these steps to set up the game engine on your local machine.
+
+### 1. Clone the Repository
+Open your terminal and clone the repository:
+```bash
+git clone https://github.com/Sahil1205-jat/codegear-wirefrontend.git
+cd codegear-wirefrontend
+```
+
+### 2. Install Dependencies
+Install all the required Node.js packages:
+```bash
+npm install
+```
+
+### 3. Configure Environment Variables
+You need to set up your Google OAuth keys and Database URL.
+Create a new file named `.env.local` in the root of the frontend folder and add the following:
+
+```env
+# Google OAuth Credentials
+GOOGLE_CLIENT_ID="your_google_client_id_here"
+GOOGLE_CLIENT_SECRET="your_google_client_secret_here"
+NEXTAUTH_SECRET="any_random_string_like_codegear123"
+NEXTAUTH_URL="http://localhost:3000"
+
+# Local Database
+DATABASE_URL="file:./dev.db"
+```
+
+### 4. Initialize the Database
+The platform uses Prisma and SQLite to save user progress. Run the following commands to generate the local database file:
+```bash
+npx prisma db push
+npx prisma generate
+```
+*(This will automatically create a `dev.db` file in your `/prisma` folder.)*
+
+### 5. Start the Game Engine!
+Boot up the Next.js development server:
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser. Log in with Google, and start coding!
+
+---
 
 ## 🛠️ Tech Stack
 - **Framework:** Next.js 15 (App Router)
+- **Database:** Prisma ORM + SQLite
+- **Authentication:** NextAuth (Google Provider)
 - **Styling:** Tailwind CSS + Framer Motion
-- **Canvas/Graphics:** React-Konva
-- **Window Management:** react-rnd
 - **Icons:** Lucide React
-
-## 🌐 Deployment
-This frontend is completely ready to be deployed to **Vercel**. Since it supports the Cloud Compiler API out-of-the-box, you do not need the backend running to host this on the internet!
