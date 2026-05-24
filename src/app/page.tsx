@@ -1,9 +1,11 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { LevelMap, Level } from '@/components/game/LevelMap';
 import { Code2, Terminal, Play, LogIn, LogOut, Volume2, VolumeX, Target, ArrowLeft, Cpu } from 'lucide-react';
 import { signIn, signOut, useSession } from 'next-auth/react';
+import Editor from '@monaco-editor/react';
 import { initialLevels } from '@/data/levels';
 import { cModules, cppModules, javaModules, CourseModule } from '@/data/courses';
 
@@ -50,6 +52,7 @@ export default function Home() {
 
   // Execution State
   const [executionState, setExecutionState] = useState<'idle' | 'compiling' | 'running' | 'completed'>('idle');
+  const [executionEngine, setExecutionEngine] = useState<'wandbox' | 'docker'>('wandbox');
   const [dataBusActive, setDataBusActive] = useState(false);
   const [language, setLanguage] = useState<'c' | 'cpp' | 'java'>('cpp');
   const [code, setCode] = useState('');
@@ -107,33 +110,61 @@ export default function Home() {
 
     try {
       await new Promise(resolve => setTimeout(resolve, 800));
-      
       setExecutionState('running');
-      setOutput(prev => ({ ...prev, stdout: prev.stdout + `> Execution started via Cloud Compiler (Wandbox)...\n> Mounting volumes...\n` }));
-
-      const wandboxLangMap: Record<string, string> = {
-        'c': 'gcc-head-c',
-        'cpp': 'gcc-head',
-        'java': 'openjdk-jdk-22+36'
-      };
-
-      const response = await fetch('https://wandbox.org/api/compile.json', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code: language === 'java' ? code.replace(/public\s+class/, 'class') : code,
-          compiler: wandboxLangMap[language]
-        })
-      });
-
-      const data = await response.json();
-      const isError = data.status !== '0' || !!data.compiler_error || !!data.program_error;
       
+      let outStr = '';
+      let isError = false;
+      let stderrMsg = '';
+
+      if (executionEngine === 'wandbox') {
+        setOutput(prev => ({ ...prev, stdout: prev.stdout + `> Execution started via Cloud API (Wandbox)...\n> Serverless container initiated...\n` }));
+        
+        const wandboxLangMap: Record<string, string> = {
+          'c': 'gcc-head-c',
+          'cpp': 'gcc-head',
+          'java': 'openjdk-jdk-22+36'
+        };
+
+        const response = await fetch('https://wandbox.org/api/compile.json', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: language === 'java' ? code.replace(/public\s+class/, 'class') : code,
+            compiler: wandboxLangMap[language]
+          })
+        });
+
+        const data = await response.json();
+        isError = data.status !== '0' || !!data.compiler_error || !!data.program_error;
+        outStr = data.program_output?.trim() || '';
+        stderrMsg = data.compiler_error || data.program_error || '';
+
+      } else {
+        // DOCKER LOCAL HARDWARE ENGINE
+        setOutput(prev => ({ ...prev, stdout: prev.stdout + `> Routing to Local Hardware Docker Engine...\n> Building isolated Linux container...\n` }));
+        
+        const response = await fetch('http://localhost:3001/api/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, language })
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+          isError = true;
+          stderrMsg = data.error || data.details || 'Unknown Hardware Error';
+        } else {
+          isError = !!data.stderr;
+          outStr = data.stdout?.trim() || '';
+          stderrMsg = data.stderr || '';
+        }
+      }
+
       setExecutionState('completed');
       setDataBusActive(false);
 
       let missionPassed = false;
-      const outStr = data.program_output?.trim() || '';
       
       if (activeLevel && !isError && outStr.includes(activeLevel.expectedOutput || '')) {
         missionPassed = true;
@@ -170,15 +201,15 @@ export default function Home() {
       }
 
       setOutput({ 
-        stdout: data.program_output || '', 
-        stderr: data.compiler_error || data.program_error || '', 
+        stdout: outStr, 
+        stderr: stderrMsg, 
         type: missionPassed ? 'mission_passed' : (isError ? 'error' : 'success') 
       });
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       setExecutionState('completed');
       setDataBusActive(false);
-      setOutput({ stdout: '', stderr: 'Critical System Failure: Connection refused.', type: 'error' });
+      setOutput({ stdout: '', stderr: 'Critical System Failure: Connection refused. Is your backend server running?', type: 'error' });
     }
   };
 
@@ -403,18 +434,33 @@ export default function Home() {
             
             {/* Editor Toolbar */}
             <div className="h-12 border-b border-zinc-800 flex items-center justify-between px-4 bg-[#0a0a0c]">
-              <div className="flex items-center gap-2">
-                <Code2 className="w-4 h-4 text-zinc-500" />
-                <select 
-                  value={language} 
-                  onChange={(e) => handleLanguageChange(e.target.value as any)}
-                  className="bg-transparent text-sm font-mono text-zinc-300 outline-none border-none cursor-pointer"
-                >
-                  <option value="cpp">C++ (G++)</option>
-                  <option value="c">C (GCC)</option>
-                  <option value="java">Java (OpenJDK)</option>
-                </select>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <Code2 className="w-4 h-4 text-zinc-500" />
+                  <select 
+                    value={language} 
+                    onChange={(e) => handleLanguageChange(e.target.value as 'c' | 'cpp' | 'java')}
+                    className="bg-transparent text-sm font-bold font-mono text-zinc-300 outline-none border-none cursor-pointer"
+                  >
+                    <option value="cpp">C++ (G++)</option>
+                    <option value="c">C (GCC)</option>
+                    <option value="java">Java (OpenJDK)</option>
+                  </select>
+                </div>
+                
+                <div className="flex items-center gap-2 border-l border-zinc-800 pl-6">
+                  <Cpu className="w-4 h-4 text-zinc-500" />
+                  <select 
+                    value={executionEngine} 
+                    onChange={(e) => setExecutionEngine(e.target.value as 'wandbox' | 'docker')}
+                    className="bg-transparent text-sm font-bold font-mono text-zinc-400 outline-none border-none cursor-pointer"
+                  >
+                    <option value="wandbox">Cloud API (Wandbox)</option>
+                    <option value="docker">Local Hardware (Docker)</option>
+                  </select>
+                </div>
               </div>
+
               <button 
                 onClick={simulateExecution} 
                 disabled={executionState === 'compiling' || executionState === 'running'}
@@ -449,13 +495,37 @@ export default function Home() {
               </div>
             )}
 
-            {/* Code Editor */}
-            <textarea
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              spellCheck="false"
-              className="flex-1 w-full p-6 bg-transparent resize-none outline-none font-mono text-[14px] text-blue-50 placeholder:text-zinc-700 leading-relaxed selection:bg-blue-500/30"
-            />
+            {/* VS Code Monaco Editor Core */}
+            <div className="flex-1 w-full bg-[#1e1e1e] relative">
+              <Editor
+                height="100%"
+                language={language === 'c' ? 'c' : language === 'cpp' ? 'cpp' : 'java'}
+                theme="vs-dark"
+                value={code}
+                onChange={(value) => setCode(value || '')}
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 14,
+                  fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                  fontLigatures: true,
+                  wordWrap: 'on',
+                  padding: { top: 24, bottom: 24 },
+                  scrollBeyondLastLine: false,
+                  smoothScrolling: true,
+                  cursorBlinking: 'smooth',
+                  cursorSmoothCaretAnimation: 'on',
+                  formatOnPaste: true,
+                  lineHeight: 24,
+                }}
+                loading={
+                  <div className="flex h-full w-full items-center justify-center bg-[#1e1e1e]">
+                    <div className="flex items-center gap-3 text-zinc-500 font-mono animate-pulse">
+                      <Cpu className="w-5 h-5" /> Booting Engine Core...
+                    </div>
+                  </div>
+                }
+              />
+            </div>
 
             {/* Terminal Output */}
             <div className="h-64 border-t border-zinc-800 bg-[#000000] flex flex-col">
