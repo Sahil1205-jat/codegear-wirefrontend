@@ -5,12 +5,15 @@ import { LevelMap, Level } from '@/components/game/LevelMap';
 import { Code2, Terminal, Play, LogIn, LogOut, Volume2, VolumeX, Target, ArrowLeft, Cpu } from 'lucide-react';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { initialLevels } from '@/data/levels';
+import { cModules, cppModules, javaModules, CourseModule } from '@/data/courses';
 
 export default function Home() {
   const { data: session, status } = useSession();
   
   // Game State
-  const [viewState, setViewState] = useState<'map' | 'level'>('map');
+  const [viewState, setViewState] = useState<'map' | 'level' | 'courses' | 'course-reading'>('map');
+  const [activeCourseModules, setActiveCourseModules] = useState<CourseModule[]>([]);
+  const [activeReadingModuleId, setActiveReadingModuleId] = useState<string | null>(null);
   const [activeLevel, setActiveLevel] = useState<Level | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [xp, setXp] = useState(0);
@@ -207,14 +210,23 @@ export default function Home() {
       {/* GLOBAL NAVBAR */}
       <nav className="h-14 border-b border-zinc-800/80 bg-[#111113] flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-4">
-          {viewState === 'level' && (
-            <button onClick={() => setViewState('map')} className="p-2 hover:bg-zinc-800 rounded-md transition-colors text-zinc-400 hover:text-white flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              <span className="text-xs font-bold uppercase tracking-wider">Map</span>
-            </button>
-          )}
-          <div className="flex items-center gap-3 text-blue-400 font-black font-mono tracking-widest text-lg">
+          <div className="flex items-center gap-3 text-blue-400 font-black font-mono tracking-widest text-lg pr-4 border-r border-zinc-800">
             <img src="/logo.png" alt="Code Gear" className="w-8 h-8 object-contain" /> CODE GEAR
+          </div>
+          
+          <div className="flex items-center gap-1">
+            <button 
+              onClick={() => setViewState('map')} 
+              className={`px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${viewState === 'map' || viewState === 'level' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-white hover:bg-zinc-800/50'}`}
+            >
+              Campaign Map
+            </button>
+            <button 
+              onClick={() => setViewState('courses')} 
+              className={`px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${viewState === 'courses' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-white hover:bg-zinc-800/50'}`}
+            >
+              Courses
+            </button>
           </div>
         </div>
 
@@ -239,6 +251,129 @@ export default function Home() {
       {viewState === 'map' && (
         <div className="flex-1 overflow-hidden relative">
           <LevelMap levels={levels} onSelectLevel={handleSelectLevel} />
+        </div>
+      )}
+
+      {/* VIEW STATE: COURSES */}
+      {viewState === 'courses' && (
+        <div className="flex-1 overflow-y-auto bg-[#0a0a0c] p-10">
+          <div className="max-w-6xl mx-auto">
+            <h1 className="text-4xl font-black font-mono text-white mb-2 tracking-tight">TRAINING COURSES</h1>
+            <p className="text-zinc-400 mb-12">Select a language bootcamp to master the fundamentals before entering the campaign.</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Course Card 1 */}
+              <div className="bg-[#111114] border border-zinc-800 rounded-2xl overflow-hidden hover:border-emerald-500/50 transition-all group cursor-pointer">
+                <div className="h-32 bg-emerald-500/10 flex items-center justify-center border-b border-zinc-800/50 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#111114] to-transparent z-10"></div>
+                  <span className="text-7xl font-black text-emerald-500/20 group-hover:text-emerald-500/40 transition-colors z-0">C</span>
+                </div>
+                <div className="p-6">
+                  <div className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-2">Systems Level</div>
+                  <h3 className="text-xl font-bold text-white mb-2">C Language Bootcamp</h3>
+                  <p className="text-sm text-zinc-500 mb-6 leading-relaxed">Master memory management, pointers, and the raw power of the C programming language from the ground up.</p>
+                  <button 
+                    onClick={() => {
+                      setActiveCourseModules(cModules);
+                      setViewState('course-reading');
+                    }}
+                    className="w-full py-3 bg-zinc-900 hover:bg-emerald-600 text-white font-bold rounded-lg transition-colors text-sm"
+                  >
+                    Read Notes
+                  </button>
+                </div>
+              </div>
+
+              {/* Course Card 2 */}
+              <div className="bg-[#111114] border border-zinc-800 rounded-2xl overflow-hidden hover:border-blue-500/50 transition-all group cursor-pointer">
+                <div className="h-32 bg-blue-500/10 flex items-center justify-center border-b border-zinc-800/50 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#111114] to-transparent z-10"></div>
+                  <span className="text-7xl font-black text-blue-500/20 group-hover:text-blue-500/40 transition-colors z-0">C++</span>
+                </div>
+                <div className="p-6">
+                  <div className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-2">Object Oriented</div>
+                  <h3 className="text-xl font-bold text-white mb-2">C++ Masterclass</h3>
+                  <p className="text-sm text-zinc-500 mb-6 leading-relaxed">Dive into classes, standard template libraries (STL), and advanced object-oriented architectures.</p>
+                  <button 
+                    onClick={() => {
+                      setActiveCourseModules(cppModules);
+                      setViewState('course-reading');
+                    }}
+                    className="w-full py-3 bg-zinc-900 hover:bg-blue-600 text-white font-bold rounded-lg transition-colors text-sm"
+                  >
+                    Read Notes
+                  </button>
+                </div>
+              </div>
+
+              {/* Course Card 3 */}
+              <div className="bg-[#111114] border border-zinc-800 rounded-2xl overflow-hidden hover:border-orange-500/50 transition-all group cursor-pointer">
+                <div className="h-32 bg-orange-500/10 flex items-center justify-center border-b border-zinc-800/50 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#111114] to-transparent z-10"></div>
+                  <span className="text-7xl font-black text-orange-500/20 group-hover:text-orange-500/40 transition-colors z-0">JAVA</span>
+                </div>
+                <div className="p-6">
+                  <div className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-2">Enterprise</div>
+                  <h3 className="text-xl font-bold text-white mb-2">Java Fundamentals</h3>
+                  <p className="text-sm text-zinc-500 mb-6 leading-relaxed">Learn the JVM, garbage collection, and how to build highly scalable enterprise-level applications.</p>
+                  <button 
+                    onClick={() => {
+                      setActiveCourseModules(javaModules);
+                      setViewState('course-reading');
+                    }}
+                    className="w-full py-3 bg-zinc-900 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors text-sm"
+                  >
+                    Read Notes
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW STATE: COURSE READING */}
+      {viewState === 'course-reading' && (
+        <div className="flex-1 overflow-y-auto bg-[#0a0a0c] p-10">
+          <div className="max-w-4xl mx-auto">
+            <button onClick={() => setViewState('courses')} className="mb-8 text-zinc-500 hover:text-white flex items-center gap-2 font-bold uppercase text-xs tracking-wider transition-colors">
+              <ArrowLeft className="w-4 h-4" /> Back to Courses
+            </button>
+            <div className="space-y-8">
+              {activeCourseModules.map((module) => (
+                <div key={module.id} className="bg-[#111114] border border-zinc-800 p-8 rounded-2xl">
+                  <h2 className="text-2xl font-black text-white mb-6 tracking-tight">{module.title}</h2>
+                  <div className="prose prose-invert prose-emerald prose-pre:bg-black/50 prose-pre:border prose-pre:border-zinc-800/50 max-w-none">
+                    {/* Hacky markdown renderer for the \n\n and Code Blocks */}
+                    {module.content.split('\n\n').map((paragraph, idx) => {
+                      if (paragraph.startsWith('```')) {
+                        const lines = paragraph.split('\n');
+                        const code = lines.slice(1, lines.length - 1).join('\n');
+                        return (
+                          <pre key={idx} className="p-4 bg-black border border-zinc-800 rounded-lg overflow-x-auto text-sm text-emerald-400 font-mono my-4">
+                            <code>{code}</code>
+                          </pre>
+                        );
+                      }
+                      if (paragraph.startsWith('### ')) {
+                        return <h3 key={idx} className="text-lg font-bold text-zinc-200 mt-6 mb-2">{paragraph.replace('### ', '')}</h3>;
+                      }
+                      if (paragraph.startsWith('- ')) {
+                        return (
+                          <ul key={idx} className="list-disc pl-5 space-y-2 text-zinc-400">
+                            {paragraph.split('\n').map((item, i) => (
+                              <li key={i}>{item.replace('- ', '')}</li>
+                            ))}
+                          </ul>
+                        );
+                      }
+                      return <p key={idx} className="text-zinc-400 leading-relaxed">{paragraph}</p>;
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 

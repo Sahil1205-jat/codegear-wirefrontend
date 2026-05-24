@@ -66,9 +66,25 @@ Open [http://localhost:3000](http://localhost:3000) in your browser. Log in with
 
 ---
 
+## 🌐 Deployment
+
+The easiest way to deploy this application is using **Vercel**. 
+
+However, because this project uses **Prisma + SQLite** for local development, you must upgrade to a persistent database (like PostgreSQL) before deploying, as Vercel uses serverless functions that wipe local files (like `dev.db`) on every request.
+
+### Deployment Steps:
+1. **Get a Free Postgres Database:** Create a free database on [Neon.tech](https://neon.tech/) or [Supabase](https://supabase.com/).
+2. **Update Prisma:** Change the `provider` in your `prisma/schema.prisma` file from `"sqlite"` to `"postgresql"`.
+3. **Push to GitHub:** Commit your code and push it to GitHub.
+4. **Deploy on Vercel:** 
+   - Go to [Vercel.com](https://vercel.com/) and import your GitHub repository.
+   - In the Vercel dashboard, go to the Environment Variables settings.
+   - Add your `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`, and your new Postgres `DATABASE_URL`.
+   - Click **Deploy**.
+
 ## 🛠️ Tech Stack
 - **Framework:** Next.js 15 (App Router)
-- **Database:** Prisma ORM + SQLite
+- **Database:** Prisma ORM + SQLite (Local) / PostgreSQL (Prod)
 - **Authentication:** NextAuth (Google Provider)
 - **Styling:** Tailwind CSS + Framer Motion
 - **Icons:** Lucide React

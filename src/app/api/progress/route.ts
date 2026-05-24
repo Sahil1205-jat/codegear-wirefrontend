@@ -21,9 +21,16 @@ export async function GET() {
     },
   });
 
+  let parsedLevels = [];
+  try {
+    parsedLevels = user.completedLevels ? JSON.parse(user.completedLevels) : [];
+  } catch (e) {
+    console.error("Failed to parse completedLevels:", e);
+  }
+
   return NextResponse.json({
-    xp: user.xp,
-    completedLevels: JSON.parse(user.completedLevels)
+    xp: user.xp || 0,
+    completedLevels: parsedLevels
   });
 }
 
